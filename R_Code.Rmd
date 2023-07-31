@@ -3,12 +3,6 @@ title: "R Code - Data Driven approah for Poverty Analysis and Prediction System"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
-
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
-
 # Importing the Libraries
 
 ```{r}
@@ -179,7 +173,7 @@ binary_y_test <- ifelse(y_test > threshold, 1, 0)
 accuracy <- mean(binary_predictions == binary_y_test) * 100
 
 # Calculate RMSE for regression
-rmse <- sqrt(mean((predictions - y_test) ^ 2))
+rmse <- sqrt(mean((y_predictions - y_test) ^ 2))
 
 # Print the results
 cat("Accuracy:", accuracy, "%\n")
@@ -232,7 +226,7 @@ binary_y_test <- ifelse(y_test > threshold, 1, 0)
 accuracy <- mean(binary_predictions == binary_y_test) * 100
 
 # Calculate RMSE for regression
-rmse <- sqrt(mean((predictions - y_test) ^ 2))
+rmse <- sqrt(mean((y_pred - y_test) ^ 2))
 
 # Print the results
 cat("Accuracy:", accuracy, "%\n")
@@ -260,11 +254,50 @@ ggplot(data_plot, aes(x = predictions, y = y_test)) +
 ## Support Vector Machine (SVM)
 
 ```{r}
-
+# Train the SVM model using svm()
+svm_model <- svm(x = X_train_selected, y = y_train)
 ```
 
+```{r}
+# Make predictions on X_test_selected using the trained SVM model
+y_pr <- predict(svm_model, newdata = X_test_selected)
+```
 
+```{r}
+# Define the threshold for converting predictions and y_test to binary values
+threshold <- 0.5
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+# Convert predictions and y_test to binary values
+binary_predictions <- ifelse(y_pr > threshold, 1, 0)
+binary_y_test <- ifelse(y_test > threshold, 1, 0)
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+# Calculate accuracy for classification
+accuracy <- mean(binary_predictions == binary_y_test) * 100
+
+# Calculate RMSE for regression
+rmse <- sqrt(mean((y_pr - y_test) ^ 2))
+
+# Print the results
+cat("Accuracy:", accuracy, "%\n")
+cat("RMSE:", rmse, "\n")
+```
+
+```{r}
+# Create a confusion matrix to calculate metrics
+confusion_mat <- confusionMatrix(data = factor(binary_predictions), reference = factor(binary_y_test))
+                                 
+confusion_mat
+```
+```{r}
+# Create a data frame with predictions and y_test
+data_plot <- data.frame(predictions = y_pr, y_test = y_test)
+
+# Create a scatter plot with a smooth curve (Random Forest regression line)
+ggplot(data_plot, aes(x = predictions, y = y_test)) +
+  geom_point() +
+  geom_smooth(method = "loess", color = "blue") +
+  labs(title = "True Value vs. Predictions (Support Vector Machine)",
+       x = "Predictions",
+       y = "True Value")
+```
+
