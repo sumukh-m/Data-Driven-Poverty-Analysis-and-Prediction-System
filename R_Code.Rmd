@@ -1,0 +1,165 @@
+---
+title: "R Code - Data Driven approah for Poverty Analysis and Prediction System"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+# Importing the Libraries
+
+```{r}
+library(caret)
+library(randomForest)
+library(ggplot2)
+```
+
+# Load the Dataset
+```{r}
+train_dataset <- read.csv("train_labels.csv", header = TRUE)
+poverty_dataset <- read.csv("poverty_dataset.csv", header = TRUE)
+```
+
+# Data Cleaning and Data Preprocessing
+
+```{r}
+merged_data <- merge(poverty_dataset, train_dataset, by = "row_id")
+```
+
+```{r}
+dim(merged_data)
+```
+
+```{r}
+# Find columns with missing values
+missing_cols <- colSums(is.na(merged_data))
+
+# Get the column names with missing values
+cols_with_missing <- names(missing_cols[missing_cols > 0])
+
+# Remove columns with missing values from the merged_data data frame
+merged_data_cleaned <- merged_data[, !(names(merged_data) %in% cols_with_missing)]
+```
+
+```{r}
+dim(merged_data_cleaned)
+```
+
+```{r}
+# Create the X data frame with features (dropping row_id and Poverty_Probability columns)
+X <- merged_data_cleaned[, !(names(merged_data_cleaned) %in% c("row_id", "poverty_probability"))]
+
+# Create the y data frame with the target variable (poverty_probability)
+y <- merged_data_cleaned$poverty_probability
+
+# Set the seed for reproducibility of the train-test split
+set.seed(42)
+
+# Split the dataset into train (80%) and test (20%) sets using caret package
+train_index <- createDataPartition(y, p = 0.8, list = FALSE)
+X_train <- X[train_index, ]
+y_train <- y[train_index]
+X_test <- X[-train_index, ]
+y_test <- y[-train_index]
+```
+
+```{r}
+# Perform label encoding on each column with string values
+for (col in names(X_train)) {
+  if (is.character(X_train[[col]])) {
+    X_train[[col]] <- as.integer(factor(X_train[[col]]))
+  }
+}
+```
+
+```{r}
+for (col in names(X_test)) {
+  if (is.character(X_test[[col]])) {
+    X_test[[col]] <- as.integer(factor(X_test[[col]]))
+  }
+}
+```
+
+
+```{r}
+# Define the list of columns to include in the X_train and X_test data frames
+selected_columns <- c('country', 'is_urban', 'literacy', 'employment_type_last_year',
+                      'income_private_sector_last_year', 'formal_savings', 'has_investment',
+                      'num_shocks_last_year', 'phone_technology', 'can_call', 'can_text',
+                      'can_use_internet', 'can_make_transaction', 'phone_ownership',
+                      'advanced_phone_use', 'reg_bank_acct', 'financially_included',
+                      'active_bank_user', 'num_formal_institutions_last_year',
+                      'num_financial_activities_last_year')
+
+# Select only the specified columns for X_train and X_test data frames
+X_train_selected <- X_train[, selected_columns]
+X_test_selected <- X_test[, selected_columns]
+
+```
+
+```{r}
+dim(X_train_selected)
+dim(X_test_selected)
+```
+# Model Training and Evaluation
+
+## Linear Regression
+```{r}
+# Train the linear regression model using lm()
+lm_model <- lm(y_train ~ ., data = cbind(X_train_selected, y_train))
+```
+
+```{r}
+# Make predictions on X_test_selected using the trained model
+predictions <- predict(lm_model, newdata = X_test_selected)
+```
+
+
+```{r}
+# Convert predictions and y_test to binary values
+threshold <- 0.5
+binary_predictions <- ifelse(predictions > threshold, 1, 0)
+binary_y_test <- ifelse(y_test > threshold, 1, 0)
+
+# Calculate accuracy for classification
+accuracy <- mean(binary_predictions == binary_y_test) * 100
+
+# Calculate RMSE for regression (optional)
+rmse <- sqrt(mean((predictions - y_test) ^ 2))
+
+# Print the results
+cat("Accuracy:", accuracy, "%\n")
+cat("RMSE:", rmse, "\n")
+```
+```{r}
+# Create a confusion matrix to calculate metrics
+confusion_mat <- confusionMatrix(data = factor(binary_predictions), reference = factor(binary_y_test))
+                                 
+confusion_mat
+```
+```{r}
+# Create a data frame with predictions and y_test
+data_plot <- data.frame(predictions = predictions, y_test = y_test)
+
+# Create a scatter plot with a regression line
+ggplot(data_plot, aes(x = predictions, y = y_test)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Predictions vs. y_test",
+       x = "Predictions",
+       y = "y_test")
+```
+## K-Nearest Neighbours
+
+```{r}
+
+```
+
+
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
