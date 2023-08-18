@@ -39,7 +39,7 @@ Support Vector Machine (SVM): SVM finds hyperplanes that optimally separate diff
 
 Each model is trained on the training subset and evaluated using the testing subset, using appropriate metrics to gauge their predictive accuracy.
 
-Results and Evaluation
+# Results and Evaluation
 
 # Python Results
 ![image](https://github.com/sumukh-m/Data-Driven-Poverty-Analysis-and-Prediction-System/blob/master/Screenshots/Python.PNG)
